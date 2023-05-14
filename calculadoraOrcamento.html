@@ -1,0 +1,178 @@
+<template>
+    <div class="container slds-m-top_small slds-align_absolute-center">
+        <div class="info container">
+            <!--
+                Card:
+                • Componente LWC no formato de um cartão.
+                • Atributos:
+                    ◘ icon-name: Define o icon do SLDS que irá ser apresentado ao lado esquerdo do titulo do componente.
+            -->
+            <lightning-card class="container" variant="narrow" icon-name="standard:products">
+                <!--
+                    Título do componente LWC:
+                    • Fica ao lado direito do icone que é apresentado no titulo do componente.
+                    • Atributos:
+                        ◘ slot: Define que esse componente h1 será o titulo do elemento card do LWC.
+                -->
+                <h1 slot="title">Orçamento de Jogos</h1>
+                <div class="slds-p-around_small">
+                    <!--
+                        Dropdown/Select/Combobox com produtos:
+                        • Lista de produtos recuperados do banco de dados para ser apresentado e selecionado pelo cliente.
+                        • Atributos:
+                            ◘ placeholder: Define texto que será apresentado no dropdown enquanto algum valor não é selecionado.
+                            ◘ options: Esta recebendo os valores da variável 'produtosOpcoes' criada no Javascript, que possui
+                                os valores que foram recuperados do banco de dados pela classe Apex, com o formato:
+                                    ♦ value: Recebendo o id do produto.
+                                    ♦ label: Recebe o nome do produto.
+                                    ♦ description: Recebe a descrição do produto.
+                            ◘ onchange: Recebe o método que vai preencher o valores 'Preço unitário', 'Quantidade', 'Desconto'.
+                                O atributo onchange possui um método que é executado sempre que o valor do componente mudar.
+                                Nesse caso como o componente é um dropdown com os produtos, sempre que for selecionado um produto,
+                                esse método será executado preenchendo os valores dos campos com o preço unitário, e zerando a quantidade
+                                e desconto.
+                    -->
+                    <lightning-combobox name="product" label="Produtos" placeholder="Selecione o produto..."
+                        options={produtosOpcoes} onchange={handleSelectChange}>
+                    </lightning-combobox>
+                    <div class="slds-grid">
+                        <div class="slds-col">
+                            <span>
+                                <!--
+                                    Input Preço Unitário:
+                                    • Apresenta para o usuário um campo input com o preço inicial do produto recuperado do pricebook,
+                                        onde o usuário pode mudar o preço como quiser depois de selecionar o produto.
+                                    • Atributos:
+                                        ◘ value: Método get do unityPrice. Um método get é um método que funciona como uma variável
+                                            recuperando de forma dinâmica o valor dentro de uma variável.
+                                        ◘ onchange: Recebe o método que vai preencher o valores 'Preço unitário', 'Quantidade', 'Desconto'.
+                                            O atributo onchange possui um método que é executado sempre que o valor do componente mudar.
+                                            Nesse caso como o componente é um dropdown com os produtos, sempre que for selecionado um produto,
+                                            esse método será executado preenchendo os valores dos campos com o preço unitário, e zerando a quantidade
+                                            e desconto.
+                                -->
+                                <lightning-input name="precoUnitario" label="Preço Unitário (R$)" type="decimal"
+                                    value={getUnityPrice} onchange={setUnityPrice} class="tamanho"></lightning-input>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-p-horizontal_x-small">
+                            <span>
+                                <!-- 
+                                    Input de quantidade:
+                                    • value: Usa um método get que retorna um valor e pode ser referenciado como uma variável.
+                                        Diferente da variável não podemos usar ele para receber valores. Se o valor da variável
+                                        que ele retornar mudar, ele atualiza o valor no layout dinâmicamente.
+                                    • onchange: Método que será usado para setar o valor atual da quantidade no layout. Mudou
+                                        a quantidade, muda o valor da variável quantidade utilizando o método setQuantity.
+                                 -->
+                                <lightning-input name="quantidade" label="Quantidade" type="number" value={getQuantity}
+                                    onchange={setQuantity} required="true" class="tamanho"></lightning-input>
+                            </span>
+                        </div>
+                        <div class="slds-col">
+                            <span>
+                                <!-- 
+                                    Input de desconto:
+                                    • value: Usa um método get que retorna um valor e pode ser referenciado como uma variável.
+                                        Diferente da variável não podemos usar ele para receber valores. Se o valor da variável
+                                        que ele retornar mudar, ele atualiza o valor no layout dinâmicamente.
+                                    • onchange: Método que será usado para setar o valor atual do desconto no layout. Mudou
+                                        o desconto, muda o valor da variável desconto utilizando o método setDesconto.
+                                 -->
+                                <lightning-combobox name="discount" label="Desconto" value={discountValue}
+                                    placeholder="0%" options={discountOptions} onchange={setDesconto}>
+                                </lightning-combobox>
+                            </span>
+                        </div>
+                    </div>
+                    <!-- 
+                        Input do valor total do produto selecionado atual:
+                        Obs: Poderiamos utilizar um lightning-output mas eu gosto do visual de um input desabilitado,
+                            porisso utilizei o lightning-input.
+                        • title: Define valor quando colocamos o mouse parado em cima do input, ele apresenta um texto.
+                        • type: Definido como número para aceitar apenas números como entrada.
+                        • value: Utiliza o método get para recuperar o valor atual da variável para o frontend.
+                        • fomatter: Quando definido como currency (moeda) ele formata o texto no formato de moeda, com
+                            R$ que seria o formato da moeda local de uma org configurada como brasileira por exemplo.
+                            Se for uma org configurada com a moeda americana por exemplo, vai usar o $ do dolar.
+                    -->
+                    <lightning-input disabled name="preco-total-produto" label="Preço total do produto"
+                        title="(Total = quantidade * valor * desconto)" type="number" value={getProductTotalValue}
+                        formatter="currency"></lightning-input>
+                    <div class="button">
+                        <!-- 
+                            Botão (Adicionar):
+                            • Detalhes: Utiliza o método addProductPurchaseList para adicionar o produto selecionado a lista
+                                de compras. Pega o id do produto selecionado no dropdown, para recuperar o produto atual
+                                do mapa de produtos, e pega os valores de preço unitário, desconto e quantidade que o usuário
+                                inputou e os métodos set atualizaram as variáveis para calcular os valores, e criarem um item
+                                na lista de compras que irá passar pelo loop e renderizar varias linhas na tabela do frontend.
+                            • label: Rótulo que vai aparecer no botão no frontend.
+                        -->
+                        <lightning-button class="slds-m-top_small slds-align_absolute-center" variant="brand"
+                            label="Adicionar" onclick={addProductPurchaseList}></lightning-button>
+                        <!-- 
+                            Botão (Limpar lista):
+                            • Detalhes: Apenas limpa a lista de produtos no carrinho. Como o layout executa um loop nessa lista
+                                quando o valor mudar, ele muda o layout. Quando atribuimos uma lista vazia ao arraye,
+                                as linhas da tabela vão ser zeradas, e não teremos mais itens na lista de compras.
+                        -->
+                        <lightning-button class="slds-m-top_small slds-align_absolute-center" label="Limpar lista"
+                            onclick={clearList} style="color: #54BFA1"></lightning-button>
+                    </div>
+                    <table>
+                        <!-- 
+                            Cabeçalho da tabela:
+                            • Detalhes: Colunas que a tabela irá ter.
+                        -->
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Preço Unitário</th>
+                                <th>Quantidade</th>
+                                <th>Desconto</th>
+                                <th>Valor Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 
+                                Corpo da tabela:
+                                • Detalhes: o for:each vai iterar no método getPurchaseList.
+                                    Esse método retorna o valor da lista de compras, e como é uma lista,
+                                    vai executar um loop. Os itens individuais serão preenchidos na variável productItem.
+                                    Dentro do for:each, pegamos os valores individuais de cada produto adicionado a lista,
+                                    e apresentamos no layou como uma linha e celulas da tabela.
+                                    Todo componente criado dinâmicamente tem que ter uma chave única. É ai que entra o atributo
+                                    'key' na linha. É a chave única do elemento criado dinâmicamente.
+                            -->
+                            <template for:each={getPurchaseList} for:item="productItem">
+                                <tr key={productItem.Id}>
+                                    <td>{productItem.Name}</td>
+                                    <td>R$ {productItem.UnitPrice}</td>
+                                    <td>{productItem.Quantity}</td>
+                                    <td>{productItem.PercentDiscount} %</td>
+                                    <td>R$ {productItem.TotalValue}</td>
+                                </tr>
+                            </template>
+                            <tr>
+                                <td colspan="5">
+                                    <hr style="margin: 1% 0;" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <!-- 
+                                    Ultima linha da tabela:
+                                    • Detalhes: Chama o método getTotalValue. Esse método percorre a lista de produtos do carrinho
+                                        calculando e somando todos os valores dos produtos para recuperar o valor total da compra,
+                                        e apresentar no frontend.
+                                -->
+                                <td colspan="4">Valor total dos produtos:</td>
+                                <td>R$ {getTotalValue}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </lightning-card>
+        </div>
+    </div>
+</template>
