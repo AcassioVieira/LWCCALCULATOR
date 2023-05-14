@@ -1,2 +1,0 @@
-# LWCCALCULATOR
-calduladora lwc orcamento
